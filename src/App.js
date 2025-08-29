@@ -1,23 +1,71 @@
-import logo from './logo.svg';
 import './App.css';
+import React, { useState } from 'react';
+import logo from './images/logo.png'; // Certifique-se de ter o arquivo logo.png 
 
 function App() {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [error, setError] = useState('');
+  const [logado, setLogado] = useState(false);
+  const [user, setUser] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (email === '' || senha === '') {
+      setError('Por favor, preencha todos os campos.');
+    } else {
+      setError('');
+      setUser(email);
+      setLogado(true);
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="login-bg">
+      <div className="login-card">
+        <div className="login-logo">
+          <div className="logo-circle">
+            <img src={logo} alt="Logo" className="logo-img" />
+          </div>
+        </div>
+        <form className="login-form" onSubmit={handleLogin}>
+          <label className="login-label">Email</label>
+          <input
+            className="login-input"
+            type="email"
+            placeholder="Seu Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+          <label className="login-label" style={{ marginTop: 16 }}>Senha</label>
+          <div className="senha-wrapper">
+            <input
+              className="login-input senha-input"
+              type={mostrarSenha ? "text" : "password"}
+              placeholder="Sua senha"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+            />
+            <button
+              type="button"
+              className="senha-eye-btn"
+              onClick={() => setMostrarSenha(!mostrarSenha)}
+              tabIndex={0}
+              aria-label="Mostrar senha"
+            >
+              <svg width="22" height="22" fill="#000000ff" viewBox="0 0 24 24">
+                <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12c-2.761 0-5-2.239-5-5s2.239-5 5-5 5 2.239 5 5-2.239 5-5 5zm0-8a3 3 0 100 6 3 3 0 000-6z"/>
+              </svg>
+            </button>
+          </div>
+          <div className="login-links">
+            <a href="#" className="login-link">Esqueci a senha</a>
+          </div>
+          {error && <span className="login-error">{error}</span>}
+          <button className="login-btn" type="submit">Entrar</button>
+        </form>
+      </div>
     </div>
   );
 }
