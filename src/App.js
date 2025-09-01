@@ -1,14 +1,17 @@
 import './App.css';
 import React, { useState } from 'react';
-import logo from './images/logo.png'; // Certifique-se de ter o arquivo logo.png 
+import logo from './images/logo.png';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import SimplicioPage from './home';
+import ListaAgentesPage from './lista_agentes';
+import { AgentFormPage } from './add_agente';
 
-function App() {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [error, setError] = useState('');
-  const [logado, setLogado] = useState(false);
-  const [user, setUser] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -16,8 +19,7 @@ function App() {
       setError('Por favor, preencha todos os campos.');
     } else {
       setError('');
-      setUser(email);
-      setLogado(true);
+      navigate('/home');
     }
   };
 
@@ -67,6 +69,19 @@ function App() {
         </form>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/home" element={<SimplicioPage />} />
+        <Route path="/agentes" element={<ListaAgentesPage />} />
+        <Route path="/add-agente" element={<AgentFormPage />} />
+      </Routes>
+    </Router>
   );
 }
 
