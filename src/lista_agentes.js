@@ -101,7 +101,15 @@ export default function ListaAgentesPage() {
               Agentes
             </li>
             <li>Atendimentos</li>
-            <li>Arquivos</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/anexos");
+              }}
+            >
+              Arquivos
+            </li>
             <li>Histórico</li>
             <li>Configurações</li>
             <li className="exit">Sair</li>
@@ -156,7 +164,7 @@ export default function ListaAgentesPage() {
               <span>Modelo</span>
               <span>IA</span>
               <span>Data Criação</span>
-              <span></span>
+              <span>Ações</span>
             </div>
             {agentes.length === 0 ? (
               <div className="row">

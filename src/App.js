@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import SimplicioPage from './home';
 import ListaAgentesPage from './lista_agentes';
 import { AgentFormPage } from './add_agente';
+import { ListaAnexoPage } from './lista_anexo';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -80,6 +81,7 @@ function App() {
         <Route path="/home" element={<SimplicioPage />} />
         <Route path="/agentes" element={<ListaAgentesPage />} />
         <Route path="/add-agente" element={<AgentFormPage />} />
+        <Route path="/anexos" element={<ListaAnexoPage />} />
       </Routes>
     </Router>
   );

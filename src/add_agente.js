@@ -3,6 +3,7 @@ import { Menu, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const PERMISSOES = ["Texto", "Áudio", "Imagem", "Documentos"];
+const PERMISSOES_SAIDA = ["Texto", "Link", "Imagem", "Documentos"];
 
 // =========================
 // Página: Formulário de Agente com visual igual ao home
@@ -24,6 +25,7 @@ export default function AgentFormPage() {
   // Permissões como array de nomes marcados
   const [permissoesEntradaMarcadas, setPermissoesEntradaMarcadas] = useState([]);
   const [permissoesSaidaMarcadas, setPermissoesSaidaMarcadas] = useState([]);
+  const [anexos, setAnexos] = useState([]);
 
   // Atualiza os estados se mudar o agente (ex: navegação entre agentes)
   useEffect(() => {
@@ -64,6 +66,25 @@ export default function AgentFormPage() {
     };
   }, [open]);
 
+  // Buscar anexos para exibir short_codes
+  useEffect(() => {
+    async function fetchAnexos() {
+      const apiUrl = process.env.REACT_APP_API_URL;
+      try {
+        const res = await fetch(`${apiUrl}/anexo/listar`);
+        const data = await res.json();
+        if (Array.isArray(data.anexos)) {
+          setAnexos(data.anexos);
+        } else {
+          setAnexos([]);
+        }
+      } catch {
+        setAnexos([]);
+      }
+    }
+    fetchAnexos();
+  }, [agenteEdit]);
+
   // Função para lidar com checkboxes de permissões
   const handlePermissaoEntrada = (permissao) => {
     setPermissoesEntradaMarcadas((prev) =>
@@ -100,7 +121,7 @@ export default function AgentFormPage() {
       nome,
       valor: permissoesEntradaMarcadas.includes(nome) ? "true" : ""
     }));
-    const permissoes_saida = PERMISSOES.map(nome => ({
+    const permissoes_saida = PERMISSOES_SAIDA.map(nome => ({
       nome,
       valor: permissoesSaidaMarcadas.includes(nome) ? "true" : ""
     }));
@@ -143,6 +164,30 @@ export default function AgentFormPage() {
     }
   };
 
+  // Função para inserir short_code no texto de instruções
+  function inserirShortCode(short_code) {
+    const marcador = `<{${short_code}}>`;
+    // Insere no cursor ou ao final
+    const textarea = document.getElementById("instrucoes-textarea");
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const textoAtual = instrucoes;
+      const novoTexto =
+        textoAtual.substring(0, start) +
+        marcador +
+        textoAtual.substring(end);
+      setInstrucoes(novoTexto);
+      // Reposiciona o cursor após o marcador
+      setTimeout(() => {
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + marcador.length;
+      }, 0);
+    } else {
+      setInstrucoes(instrucoes + marcador);
+    }
+  }
+
   return (
     <div className="simplicio-v2">
       <style>{css}</style>
@@ -173,7 +218,15 @@ export default function AgentFormPage() {
               Agentes
             </li>
             <li>Atendimentos</li>
-            <li>Arquivos</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/anexos");
+              }}
+            >
+              Arquivos
+            </li>
             <li>Histórico</li>
             <li>Configurações</li>
             <li className="exit">Sair</li>
@@ -226,10 +279,31 @@ export default function AgentFormPage() {
                 <label className="label mt">Instruções</label>
                 <textarea
                   className="textarea"
+                  id="instrucoes-textarea"
                   rows={6}
                   value={instrucoes}
                   onChange={(e) => setInstrucoes(e.target.value)}
                 />
+                {/* Container de short_codes dos anexos */}
+                <div className="shortcode-container">
+                  {anexos.length === 0 ? (
+                    <span style={{ color: "#aaa", fontSize: 13 }}>Nenhum documento anexado.</span>
+                  ) : (
+                    <div className="shortcode-list">
+                      {anexos.map((anexo, idx) => (
+                        <button
+                          key={anexo.short_code || idx}
+                          type="button"
+                          className="shortcode-pill"
+                          title={anexo.nome}
+                          onClick={() => inserirShortCode(anexo.short_code)}
+                        >
+                          <span className="shortcode-pill-text">{`<{${anexo.short_code}}>`}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="row mt-sm">
                   <div className="mini">
@@ -279,7 +353,7 @@ export default function AgentFormPage() {
 
                 <label className="label mt">Permissões(Saída)</label>
                 <div className="checkbox-group">
-                  {PERMISSOES.map((nome) => (
+                  {PERMISSOES_SAIDA.map((nome) => (
                     <label key={nome}>
                       <input
                         type="checkbox"
@@ -372,6 +446,46 @@ html,body,#root{height:100%}
 .btn{height:36px;padding:0 18px;border-radius:8px;border:1px solid transparent;font-weight:700;font-size:13px;cursor:pointer}
 .btn-danger{background:#c13f4a;color:#fff}
 .btn-success{background:#1e9e57;color:#fff}
+
+/* SHORT CODES (ANEXOS) */
+.shortcode-container{
+  margin-top:10px;
+  margin-bottom:8px;
+  padding-bottom:2px;
+  overflow-x:auto;
+  white-space:nowrap;
+  display:block;
+  border-bottom:1px solid #444;
+}
+.shortcode-list{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:2px;
+}
+.shortcode-pill{
+  background:#232325;
+  color:#00eaff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  transition:background .2s;
+  outline:none;
+}
+.shortcode-pill:hover, .shortcode-pill:focus{
+  background:#1762c4;
+  color:#fff;
+}
+.shortcode-pill-text{
+  font-family:monospace;
+  font-weight:bold;
+  background:rgba(0,234,255,0.08);
+  padding:2px 0;
+  border-radius:3px;
+}
 `;
 
 // Exportação nomeada para compatibilidade

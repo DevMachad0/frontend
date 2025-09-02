@@ -45,7 +45,15 @@ export default function SimplicioPage() {
               Agentes
             </li>
             <li>Atendimentos</li>
-            <li>Arquivos</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/anexos");
+              }}
+            >
+              Arquivos
+            </li>
             <li>Histórico</li>
             <li>Configurações</li>
             <li className="exit">Sair</li>
