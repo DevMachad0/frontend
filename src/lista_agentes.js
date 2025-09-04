@@ -5,13 +5,15 @@ import { useNavigate } from "react-router-dom";
 export default function ListaAgentesPage() {
   const [search, setSearch] = useState("");
   const [agentes, setAgentes] = useState([]);
-  const [selectedId, setSelectedId] = useState(null); // Novo estado
+  const [selectedId, setSelectedId] = useState(null);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true); // novo estado de loading
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
   // Função para buscar agentes
   const fetchAgentes = () => {
+    setLoading(true); // inicia loading
     const apiUrl = process.env.REACT_APP_API_URL;
     fetch(`${apiUrl}/agente/listar_agentes`)
       .then((res) => res.json())
@@ -24,7 +26,8 @@ export default function ListaAgentesPage() {
           setAgentes([]);
         }
       })
-      .catch(() => setAgentes([]));
+      .catch(() => setAgentes([]))
+      .finally(() => setLoading(false)); // encerra loading
   };
 
   useEffect(() => {
@@ -166,7 +169,15 @@ export default function ListaAgentesPage() {
               <span>Data Criação</span>
               <span>Ações</span>
             </div>
-            {agentes.length === 0 ? (
+            {loading ? (
+              <div className="row bis_skin_checked">
+                <span />
+                <span colSpan={4} style={{ gridColumn: "span 4", color: "#00eaff", textAlign: "center" }}>
+                  <span className="anexo-spinner"></span> Carregando agentes...
+                </span>
+                <span />
+              </div>
+            ) : agentes.length === 0 ? (
               <div className="row">
                 <span />
                 <span colSpan={4} style={{ gridColumn: "span 4", color: "#aaa" }}>
@@ -188,7 +199,19 @@ export default function ListaAgentesPage() {
                   <span>{agente.ia}</span>
                   <span>{agente.data_criacao}</span>
                   <div className="actions">
-                    <button className="btn blue small" onClick={() => navigator.clipboard.writeText(agente.url)}>Copiar url</button>
+                    <button
+                      className="btn blue small"
+                      type="button"
+                      onClick={() => {
+                        const apiUrl = process.env.REACT_APP_API_URL;
+                        const webhookUrl = `${apiUrl}${agente.url}`;
+                        navigator.clipboard.writeText(webhookUrl)
+                          .then(() => alert("URL Webhook copiada!"))
+                          .catch(() => alert("Erro ao copiar URL Webhook."));
+                      }}
+                    >
+                      URL
+                    </button>
                     <button
                       className="btn blue small"
                       type="button"
@@ -226,34 +249,48 @@ const css = `
   --stroke:#d9d9d9;
   --blue:#0d6efd;
   --red:#dc3545;
-  
 }
-
 *{box-sizing:border-box}
 html,body,#root{height:100%}
-
 .lista-agentes{min-height:100vh;background:var(--bg);color:white;display:flex;flex-direction:column}
-
 .header-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:14px 22px}
 .icon-btn{height:34px;width:34px;border-radius:8px;background:#2b2d30;border:1px solid #3a3c3f;color:#fff;display:grid;place-items:center}
 .avatar{height:36px;width:36px;border-radius:50%;background:white;color:black;border:none;display:grid;place-items:center}
 .spacer{width:100%}
-
 .main{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:20px}
 .card{width:min(980px,calc(100% - 40px));background:var(--panel);border:1px solid var(--stroke);border-radius:8px;padding:20px;}
 .title{font-size:18px;margin-bottom:14px}
-
 .search-row{display:flex;gap:10px;margin-bottom:14px}
 .search-row input{flex:1;border:1px solid var(--stroke);border-radius:6px;padding:6px 8px;background:#1b1c1e;color:#fff;}
-
 .btn{padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;border:1px solid transparent}
 .btn.blue{background:var(--blue);color:#fff;}
 .btn.red{background:var(--red);color:#fff;}
 .btn.small{padding:4px 10px;font-size:12px;margin-left:6px}
-
 .table{display:flex;flex-direction:column;gap:8px}
 .row{display:grid;grid-template-columns:auto 1.5fr 1fr 1fr 1fr auto;align-items:center;gap:12px;padding:8px 10px;border:1px solid #3a3c3f;border-radius:6px;background:#353638}
 .actions{display:flex;justify-content:flex-end}
+/* Estilo para a linha de loading */
+.bis_skin_checked {
+  background: #2b2d30;
+  border-color: #007bff;
+  color: #00eaff;
+  font-weight: 500;
+}
+.anexo-spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #00eaff;
+  border-top: 3px solid #232323;
+  border-radius: 50%;
+  animation: anexo-spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes anexo-spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
 `;
 
 // =========================

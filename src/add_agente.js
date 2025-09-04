@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const PERMISSOES = ["Texto", "Áudio", "Imagem", "Documentos"];
+const PERMISSOES = ["Texto"];
 const PERMISSOES_SAIDA = ["Texto", "Link", "Imagem", "Documentos"];
 
 // =========================
@@ -71,7 +71,7 @@ export default function AgentFormPage() {
     async function fetchAnexos() {
       const apiUrl = process.env.REACT_APP_API_URL;
       try {
-        const res = await fetch(`${apiUrl}/anexo/listar`);
+        const res = await fetch(`${apiUrl}/anexos/listar`);
         const data = await res.json();
         if (Array.isArray(data.anexos)) {
           setAnexos(data.anexos);
@@ -449,21 +449,41 @@ html,body,#root{height:100%}
 
 /* SHORT CODES (ANEXOS) */
 .shortcode-container{
+  /* controle por variáveis */
+  --pill-min: 150px;   /* largura mínima de cada pill */
+  --gap: 8px;          /* mesmo gap da .shortcode-list */
+  --visible: 3;        /* quantos pills visíveis sem rolar */
+
   margin-top:10px;
   margin-bottom:8px;
   padding-bottom:2px;
-  overflow-x:auto;
-  white-space:nowrap;
   display:block;
+
+  /* cabe exatamente 3 pills + gaps */
+  max-width: calc(var(--visible) * var(--pill-min) + (var(--visible) - 1) * var(--gap));
+
+  overflow-x:auto;     /* cria barra de rolagem quando houver mais de 3 */
+  white-space:nowrap;
   border-bottom:1px solid #444;
+
+  /* opcional: evita "pula-pula" do layout quando a barra aparece */
+  scrollbar-gutter: stable both-edges;
 }
+
 .shortcode-list{
   display:flex;
-  gap:8px;
-  overflow-x:auto;
+  gap: var(--gap);
+  overflow-x: auto;   /* redundante, mas ok manter */
   padding-bottom:2px;
 }
+
 .shortcode-pill{
+  /* cada pill ocupa a mesma “largura mínima”, permitindo prever 3 por vez */
+  flex: 0 0 var(--pill-min);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   background:#232325;
   color:#00eaff;
   border:none;
@@ -475,16 +495,23 @@ html,body,#root{height:100%}
   transition:background .2s;
   outline:none;
 }
+
 .shortcode-pill:hover, .shortcode-pill:focus{
   background:#1762c4;
   color:#fff;
 }
+
 .shortcode-pill-text{
   font-family:monospace;
   font-weight:bold;
   background:rgba(0,234,255,0.08);
   padding:2px 0;
   border-radius:3px;
+}
+
+/* (opcional) responsivo: reduz a largura mínima dos pills em telas menores */
+@media (max-width: 480px){
+  .shortcode-container{ --pill-min: 120px; }
 }
 `;
 

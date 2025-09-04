@@ -12,9 +12,9 @@ function ListaAnexoPage() {
   const [tipo, setTipo] = useState("imagem");
   const [nome, setNome] = useState("");
   const [conteudo, setConteudo] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedShortCode, setSelectedShortCode] = useState(null);
-  const [fileSize, setFileSize] = useState(""); // novo estado para tamanho
+  const [fileSize, setFileSize] = useState("");
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
@@ -23,9 +23,10 @@ function ListaAnexoPage() {
 
   useEffect(() => {
     async function fetchAnexos() {
+      setLoading(true);
       const apiUrl = process.env.REACT_APP_API_URL;
       try {
-        const res = await fetch(`${apiUrl}/anexo/listar`);
+        const res = await fetch(`${apiUrl}/anexos/listar`);
         const data = await res.json();
         if (Array.isArray(data.anexos)) {
           setDocs(data.anexos);
@@ -35,6 +36,7 @@ function ListaAnexoPage() {
       } catch {
         setDocs([]);
       }
+      setTimeout(() => setLoading(false), 400);
     }
     fetchAnexos();
   }, []);
@@ -60,6 +62,7 @@ function ListaAnexoPage() {
     setTipo("imagem");
     setNome("");
     setConteudo("");
+    setFileSize("");
   }
 
   function handleFileChange(e) {
@@ -74,7 +77,6 @@ function ListaAnexoPage() {
       return;
     }
     setNome(file.name);
-    // Calcula tamanho em MB com 2 casas decimais
     const mb = (file.size / (1024 * 1024)).toFixed(2) + " MB";
     setFileSize(mb);
     const reader = new FileReader();
@@ -92,10 +94,10 @@ function ListaAnexoPage() {
     if (tipo === "imagem" || tipo === "documento") {
       tamanho = fileSize;
     } else if (tipo === "link") {
-      tamanho = ""; // link não tem tamanho
+      tamanho = "";
     }
     try {
-      const res = await fetch(`${apiUrl}/anexo/cadastrar`, {
+      const res = await fetch(`${apiUrl}/anexos/cadastrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tipo, nome, conteudo, tamanho }),
@@ -109,7 +111,7 @@ function ListaAnexoPage() {
         setTipo("imagem");
         setFileSize("");
         // Atualiza lista
-        const resList = await fetch(`${apiUrl}/anexo/listar`);
+        const resList = await fetch(`${apiUrl}/anexos/listar`);
         const dataList = await resList.json();
         setDocs(Array.isArray(dataList.anexos) ? dataList.anexos : []);
       } else {
@@ -129,14 +131,14 @@ function ListaAnexoPage() {
     if (!window.confirm("Tem certeza que deseja excluir este anexo?")) return;
     const apiUrl = process.env.REACT_APP_API_URL;
     try {
-      const res = await fetch(`${apiUrl}/anexo/excluir/${selectedShortCode}`, {
+      const res = await fetch(`${apiUrl}/anexos/excluir/${selectedShortCode}`, {
         method: "DELETE",
       });
       const data = await res.json();
       if (res.ok) {
         alert("Anexo excluído com sucesso!");
         // Atualiza lista
-        const resList = await fetch(`${apiUrl}/anexo/listar`);
+        const resList = await fetch(`${apiUrl}/anexos/listar`);
         const dataList = await resList.json();
         setDocs(Array.isArray(dataList.anexos) ? dataList.anexos : []);
         setSelectedShortCode(null);
@@ -152,17 +154,20 @@ function ListaAnexoPage() {
   async function handleBaixar(short_code) {
     const apiUrl = process.env.REACT_APP_API_URL;
     try {
-      const res = await fetch(`${apiUrl}/anexo/download/${short_code}`);
+      const res = await fetch(`${apiUrl}/anexos/download/${short_code}`);
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || "Erro ao baixar documento.");
+        return;
+      }
+      if (data.tipo === "link") {
+        window.open(data.conteudo, "_blank");
         return;
       }
       // Converte base64 para blob
       const base64 = data.conteudo;
       const nome = data.nome || "arquivo";
       const tipo = data.tipo || "";
-      // Detecta mime-type simples
       let mime = "application/octet-stream";
       if (tipo === "imagem") mime = "image/*";
       if (tipo === "documento") mime = "application/*";
@@ -187,7 +192,17 @@ function ListaAnexoPage() {
       .catch(() => alert("Erro ao copiar Short_code."));
   }
 
-  // Utilitário para converter base64 em Blob
+  // Novo: visualizar online (abre em nova aba se for arquivo)
+  function handleVisualizar(short_code, tipo) {
+    const apiUrl = process.env.REACT_APP_API_URL;
+    if (tipo === "imagem" || tipo === "documento") {
+      window.open(`${apiUrl}/anexos/file/${short_code}`, "_blank");
+    } else if (tipo === "link") {
+      // Para link, já abre direto no handleBaixar
+      handleBaixar(short_code);
+    }
+  }
+
   function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     const byteCharacters = atob(b64Data);
     const byteArrays = [];
@@ -286,7 +301,15 @@ function ListaAnexoPage() {
                 <div className="col col-size">Tamanho</div>
                 <div className="col col-actions">Ações</div>
               </div>
-              {docs.length === 0 ? (
+              {loading ? (
+                <div className="row bis_skin_checked">
+                  <span />
+                  <span colSpan={4} style={{ gridColumn: "span 4", color: "#00eaff", textAlign: "center" }}>
+                    <span className="anexo-spinner"></span> Carregando anexos...
+                  </span>
+                  <span />
+                </div>
+              ) : docs.length === 0 ? (
                 <div className="row">
                   <div className="col" />
                   <div className="col" style={{ color: "#aaa" }}>
@@ -328,6 +351,13 @@ function ListaAnexoPage() {
                         onClick={() => handleBaixar(doc.short_code)}
                       >
                         Baixar
+                      </button>
+                      <button
+                        className="pill pill-secondary"
+                        style={{ background: "#00eaff", color: "#222" }}
+                        onClick={() => handleVisualizar(doc.short_code, doc.tipo)}
+                      >
+                        Visualizar
                       </button>
                     </div>
                   </div>
@@ -471,7 +501,7 @@ html,body,#root{height:100%}
 .row{display:grid;grid-template-columns:34px 2fr 1fr 1fr 1.6fr;gap:8px;align-items:center;background:#333538;border:1px solid #6f7175;border-radius:6px;padding:10px;margin:8px 0}
 .row.head{background:#2b2d30;font-weight:700}
 .col{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.col-actions{display:flex;justify-content:flex-end;gap:8px}
+.col-actions{display:flex;justify-content:flex-end;gap:8px;flex-direction: column;}
 .pill{height:28px;padding:0 10px;border-radius:6px;border:1px solid #b3d1ff;background:#1a6dd8;color:#fff;font-size:12px;cursor:pointer}
 .pill-secondary{background:#3b91ff}
 .pill-primary{background:#1a6dd8}
@@ -484,5 +514,26 @@ html,body,#root{height:100%}
 }
 .popup-card h3{margin-top:0;margin-bottom:12px;font-size:18px;font-weight:700;}
 .popup-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+.bis_skin_checked {
+  background: #2b2d30;
+  border-color: #007bff;
+  color: #00eaff;
+  font-weight: 500;
+}
+.anexo-spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #00eaff;
+  border-top: 3px solid #232323;
+  border-radius: 50%;
+  animation: anexo-spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes anexo-spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
 `;
 
