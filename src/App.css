@@ -1,3 +1,32 @@
+/* Estilo para SELECT e seus itens */
+select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #595b5f;
+  background: #232325;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+select:focus {
+  border-color: #1762c4;
+  box-shadow: 0 0 0 2px #1762c455;
+}
+select option {
+  background: #232325;
+  color: #fff;
+  font-size: 15px;
+  padding: 8px 12px;
+}
+select option:checked {
+  background: #1762c4;
+  color: #fff;
+}
+select option:hover {
+  background: #353638;
+  color: #00eaff;
+}
 .App {
   text-align: center;
 }
@@ -208,3 +237,16 @@ body, html, #root, .App, .login-bg {
   opacity: 1;
   background: linear-gradient(90deg, #00eaff 20%, #ff00cc 80%);
 }
+
+/* Scrollbar global: WebKit browsers + Firefox */
+:root{
+  --scrollbar-thumb-start:#3a3c40;
+  --scrollbar-thumb-end:#2f3336;
+}
+/* Firefox */
+*{scrollbar-width:thin;scrollbar-color:var(--scrollbar-thumb-start) transparent}
+/* WebKit */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--scrollbar-thumb-start),var(--scrollbar-thumb-end));border-radius:8px;border:2px solid rgba(0,0,0,0.2)}
+*::-webkit-scrollbar-thumb:hover{filter:brightness(1.05)}

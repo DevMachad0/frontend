@@ -1,11 +1,14 @@
 import './App.css';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import logo from './images/logo.png';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import SimplicioPage from './home';
 import ListaAgentesPage from './lista_agentes';
 import { AgentFormPage } from './add_agente';
 import { ListaAnexoPage } from './lista_anexo';
+import AtendimentosPage from './atendimentos';
+import { AuthProvider, AuthContext } from './auth/AuthProvider';
+import ProtectedRoute from './auth/ProtectedRoute';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,13 +17,20 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const { login } = useContext(AuthContext);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (email === '' || senha === '') {
       setError('Por favor, preencha todos os campos.');
-    } else {
+      return;
+    }
+    try {
+      await login(email, senha);
       setError('');
       navigate('/home');
+    } catch (err) {
+      setError(err.message || 'Erro ao autenticar');
     }
   };
 
@@ -76,13 +86,16 @@ function LoginPage() {
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/home" element={<SimplicioPage />} />
-        <Route path="/agentes" element={<ListaAgentesPage />} />
-        <Route path="/add-agente" element={<AgentFormPage />} />
-        <Route path="/anexos" element={<ListaAnexoPage />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/home" element={<ProtectedRoute><SimplicioPage /></ProtectedRoute>} />
+          <Route path="/agentes" element={<ProtectedRoute><ListaAgentesPage /></ProtectedRoute>} />
+          <Route path="/add-agente" element={<ProtectedRoute><AgentFormPage /></ProtectedRoute>} />
+          <Route path="/anexos" element={<ProtectedRoute><ListaAnexoPage /></ProtectedRoute>} />
+          <Route path="/atendimentos" element={<ProtectedRoute><AtendimentosPage /></ProtectedRoute>} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }

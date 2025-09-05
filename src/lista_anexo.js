@@ -243,7 +243,15 @@ function ListaAnexoPage() {
             >
               Agentes
             </li>
-            <li>Atendimentos</li>
+                        <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/atendimentos");
+              }}
+            >
+              Atendimentos
+            </li>
             <li
               style={{ cursor: "pointer" }}
               onClick={() => {
@@ -301,6 +309,7 @@ function ListaAnexoPage() {
                 <div className="col col-size">Tamanho</div>
                 <div className="col col-actions">Ações</div>
               </div>
+              <div className="rows-wrapper">
               {loading ? (
                 <div className="row bis_skin_checked">
                   <span />
@@ -363,6 +372,7 @@ function ListaAnexoPage() {
                   </div>
                 ))
               )} 
+              </div>
             </div>
           </div>
         </div>
@@ -535,5 +545,9 @@ html,body,#root{height:100%}
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
 }
+/* Wrapper para as linhas dentro do docs-card - evita quebrar o container principal quando houver muitos documentos */
+.rows-wrapper{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.rows-wrapper::-webkit-scrollbar{width:10px}
+.rows-wrapper::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#3a3c40,#2f3336);border-radius:8px;border:2px solid rgba(0,0,0,0.2)}
 `;
 

@@ -44,7 +44,15 @@ export default function SimplicioPage() {
             >
               Agentes
             </li>
-            <li>Atendimentos</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/atendimentos");
+              }}
+            >
+              Atendimentos
+            </li>
             <li
               style={{ cursor: "pointer" }}
               onClick={() => {
@@ -70,7 +78,7 @@ export default function SimplicioPage() {
         >
           <Menu size={18} />
         </button>
-        <h1 className="brand">Simplicio</h1>
+        <h1 className="brand">Agente</h1>
         <div className="spacer" />
         <button className="avatar" aria-label="perfil">
           <User size={16} />

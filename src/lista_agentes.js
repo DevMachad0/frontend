@@ -73,6 +73,14 @@ export default function ListaAgentesPage() {
     }
   };
 
+  // Formata data para pt-BR
+  const formatDateBR = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d)) return value;
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
   return (
     <div className="lista-agentes">
       <style>{cssSidebar}</style>
@@ -103,7 +111,15 @@ export default function ListaAgentesPage() {
             >
               Agentes
             </li>
-            <li>Atendimentos</li>
+                        <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/atendimentos");
+              }}
+            >
+              Atendimentos
+            </li>
             <li
               style={{ cursor: "pointer" }}
               onClick={() => {
@@ -136,7 +152,8 @@ export default function ListaAgentesPage() {
       </div>
 
       <main className="main">
-        <section className="card">
+        <div className="card-container">
+          <section className="card">
           <h2 className="title">Lista de agentes:</h2>
 
           {/* Barra de pesquisa */}
@@ -161,22 +178,27 @@ export default function ListaAgentesPage() {
 
           {/* Tabela */}
           <div className="table">
-            <div className="row" style={{ fontWeight: "bold" }}>
-              <span></span>
-              <span>Nome</span>
-              <span>Modelo</span>
-              <span>IA</span>
-              <span>Data Criação</span>
-              <span>Ações</span>
-            </div>
-            {loading ? (
-              <div className="row bis_skin_checked">
-                <span />
-                <span colSpan={4} style={{ gridColumn: "span 4", color: "#00eaff", textAlign: "center" }}>
-                  <span className="anexo-spinner"></span> Carregando agentes...
-                </span>
-                <span />
+              <div className="row head">
+                <span></span>
+                <span>Nome</span>
+                <span>Modelo</span>
+                <span>IA</span>
+                <span>Data Criação</span>
+                <span>Ações</span>
               </div>
+            <div className="rows-wrapper">
+            {loading ? (
+              // Skeleton loading: mostra algumas linhas fictícias enquanto carrega
+              [1, 2, 3].map((i) => (
+                <div key={i} className="row bis_skin_checked">
+                  <div className="skeleton-radio" />
+                  <span className="skeleton-line" style={{ width: "70%" }} />
+                  <span className="skeleton-line" style={{ width: "50%" }} />
+                  <span className="skeleton-line" style={{ width: "45%" }} />
+                  <span className="skeleton-line" style={{ width: "40%" }} />
+                  <div style={{ width: 1 }} />
+                </div>
+              ))
             ) : agentes.length === 0 ? (
               <div className="row">
                 <span />
@@ -197,7 +219,7 @@ export default function ListaAgentesPage() {
                   <span>{agente.nome_agente}</span>
                   <span>{agente.modelo}</span>
                   <span>{agente.ia}</span>
-                  <span>{agente.data_criacao}</span>
+                  <span>{formatDateBR(agente.data_criacao)}</span>
                   <div className="actions">
                     <button
                       className="btn blue small"
@@ -223,8 +245,10 @@ export default function ListaAgentesPage() {
                 </div>
               ))
             )}
+            </div>
           </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
   );
@@ -258,7 +282,8 @@ html,body,#root{height:100%}
 .avatar{height:36px;width:36px;border-radius:50%;background:white;color:black;border:none;display:grid;place-items:center}
 .spacer{width:100%}
 .main{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:20px}
-.card{width:min(980px,calc(100% - 40px));background:var(--panel);border:1px solid var(--stroke);border-radius:8px;padding:20px;}
+.card-container{width:min(980px,calc(100% - 40px));overflow:auto}
+.card{width:100%;background:var(--panel);border:1px solid var(--stroke);border-radius:8px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.45)}
 .title{font-size:18px;margin-bottom:14px}
 .search-row{display:flex;gap:10px;margin-bottom:14px}
 .search-row input{flex:1;border:1px solid var(--stroke);border-radius:6px;padding:6px 8px;background:#1b1c1e;color:#fff;}
@@ -267,30 +292,32 @@ html,body,#root{height:100%}
 .btn.red{background:var(--red);color:#fff;}
 .btn.small{padding:4px 10px;font-size:12px;margin-left:6px}
 .table{display:flex;flex-direction:column;gap:8px}
-.row{display:grid;grid-template-columns:auto 1.5fr 1fr 1fr 1fr auto;align-items:center;gap:12px;padding:8px 10px;border:1px solid #3a3c3f;border-radius:6px;background:#353638}
-.actions{display:flex;justify-content:flex-end}
+.row{display:grid;grid-template-columns:40px 2fr 1fr 1fr 1fr 1fr;align-items:center;gap:12px;padding:10px 12px;border:1px solid #3a3c3f;border-radius:6px;background:#353638}
+.row.head{position:sticky;top:0;background:linear-gradient(180deg,#3b3d40, #333538);z-index:10;color:#fff;font-weight:700}
+.row span{display:block}
+.row span:nth-child(2), .row span:nth-child(3), .row span:nth-child(4), .row span:nth-child(5){text-align:left}
+.row input[type="radio"]{justify-self:center}
+.actions{display:flex;justify-content:flex-end;gap:8px}
 /* Estilo para a linha de loading */
+/* Estilo para a linha de loading (skeleton) */
 .bis_skin_checked {
-  background: #2b2d30;
-  border-color: #007bff;
-  color: #00eaff;
-  font-weight: 500;
+  background: linear-gradient(90deg, rgba(59,93,129,0.06), rgba(59,93,129,0.02));
+  border: 1px dashed rgba(15,111,255,0.12);
+  color: #c9f7ff;
+  box-shadow: inset 0 0 30px rgba(10,80,140,0.02);
 }
-.anexo-spinner {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  border: 3px solid #00eaff;
-  border-top: 3px solid #232323;
-  border-radius: 50%;
-  animation: anexo-spin 0.8s linear infinite;
-  margin-right: 8px;
-  vertical-align: middle;
-}
+.skeleton-line{display:inline-block;height:12px;border-radius:6px;background:linear-gradient(90deg,#303437 0%, #50555a 50%, #303437 100%);animation:skeleton-loading 1.2s linear infinite}
+.skeleton-radio{width:16px;height:16px;border-radius:50%;background:#2f3336;border:1px solid #444;margin-right:6px}
+@keyframes skeleton-loading{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+.anexo-spinner{display:inline-block;width:22px;height:22px;border:3px solid #00eaff;border-top:3px solid #232323;border-radius:50%;animation:anexo-spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
 @keyframes anexo-spin {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
 }
+/* Wrapper para as linhas dentro do card - evita quebrar o container principal quando houver muitos agentes */
+.rows-wrapper{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.rows-wrapper::-webkit-scrollbar{width:10px}
+.rows-wrapper::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#3a3c40,#2f3336);border-radius:8px;border:2px solid rgba(0,0,0,0.2)}
 `;
 
 // =========================

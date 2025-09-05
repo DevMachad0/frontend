@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const PERMISSOES = ["Texto"];
+const PERMISSOES = ["Texto", "Áudio"];
 const PERMISSOES_SAIDA = ["Texto", "Link", "Imagem", "Documentos"];
 
 // =========================
@@ -217,7 +217,15 @@ export default function AgentFormPage() {
             >
               Agentes
             </li>
-            <li>Atendimentos</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/atendimentos");
+              }}
+            >
+              Atendimentos
+            </li>
             <li
               style={{ cursor: "pointer" }}
               onClick={() => {
