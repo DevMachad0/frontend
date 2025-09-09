@@ -236,7 +236,15 @@ export default function AgentFormPage() {
               Arquivos
             </li>
             <li>Histórico</li>
-            <li>Configurações</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/configuracoes");
+              }}
+            >
+              Configurações
+            </li>
             <li className="exit">Sair</li>
           </ul>
         </nav>

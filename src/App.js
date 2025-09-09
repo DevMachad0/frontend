@@ -9,6 +9,7 @@ import { ListaAnexoPage } from './lista_anexo';
 import AtendimentosPage from './atendimentos';
 import { AuthProvider, AuthContext } from './auth/AuthProvider';
 import ProtectedRoute from './auth/ProtectedRoute';
+import ConfiguracoesPage from './configuracoes';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -94,6 +95,7 @@ function App() {
           <Route path="/add-agente" element={<ProtectedRoute><AgentFormPage /></ProtectedRoute>} />
           <Route path="/anexos" element={<ProtectedRoute><ListaAnexoPage /></ProtectedRoute>} />
           <Route path="/atendimentos" element={<ProtectedRoute><AtendimentosPage /></ProtectedRoute>} />
+          <Route path="/configuracoes" element={<ProtectedRoute><ConfiguracoesPage /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </Router>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -33,6 +33,25 @@ export default function ListaAgentesPage() {
   useEffect(() => {
     fetchAgentes();
   }, []);
+
+  // Filtra agentes por nome, modelo ou ia conforme o campo de busca
+  const filteredAgentes = useMemo(() => {
+    const q = (search || "").trim().toLowerCase();
+    if (!q) return agentes;
+    return agentes.filter((a) => {
+      const nome = (a.nome_agente || "").toLowerCase();
+      const modelo = (a.modelo || "").toLowerCase();
+      const ia = (a.ia || "").toLowerCase();
+      return nome.includes(q) || modelo.includes(q) || ia.includes(q);
+    });
+  }, [agentes, search]);
+
+  // Se o agente selecionado não está mais na lista filtrada, limpa a seleção
+  useEffect(() => {
+    if (selectedId == null) return;
+    const found = filteredAgentes.some((a) => a.id === selectedId);
+    if (!found) setSelectedId(null);
+  }, [filteredAgentes, selectedId]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -130,7 +149,15 @@ export default function ListaAgentesPage() {
               Arquivos
             </li>
             <li>Histórico</li>
-            <li>Configurações</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/configuracoes");
+              }}
+            >
+              Configurações
+            </li>
             <li className="exit">Sair</li>
           </ul>
         </nav>
@@ -163,7 +190,6 @@ export default function ListaAgentesPage() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Pesquisar por agente:"
             />
-            <button className="btn blue">Pesquisar</button>
             <button
               className="btn green"
               onClick={() => navigate("/add-agente")}
@@ -199,16 +225,16 @@ export default function ListaAgentesPage() {
                   <div style={{ width: 1 }} />
                 </div>
               ))
-            ) : agentes.length === 0 ? (
+            ) : filteredAgentes.length === 0 ? (
               <div className="row">
                 <span />
                 <span colSpan={4} style={{ gridColumn: "span 4", color: "#aaa" }}>
-                  Nenhum agente encontrado.
+                  Nenhum agente encontrado{search ? ` para "${search}"` : "."}
                 </span>
                 <span />
               </div>
             ) : (
-              agentes.map((agente) => (
+              filteredAgentes.map((agente) => (
                 <div key={agente.id} className="row">
                   <input
                     type="radio"
@@ -342,7 +368,6 @@ export function AgentsListPage() {
           <label className="label">Pesquisar por agente:</label>
           <div className="search-row">
             <input className="search-input" />
-            <button className="btn btn-primary">Pesquisar</button>
             <div className="spacer" />
             <button className="btn btn-danger">Excluir</button>
           </div>

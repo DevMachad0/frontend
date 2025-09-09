@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +14,7 @@ function ListaAnexoPage() {
   const [conteudo, setConteudo] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedShortCode, setSelectedShortCode] = useState(null);
+  const [search, setSearch] = useState("");
   const [fileSize, setFileSize] = useState("");
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
@@ -40,6 +41,31 @@ function ListaAnexoPage() {
     }
     fetchAnexos();
   }, []);
+
+  // Filtra documentos por nome, tipo, tamanho ou short_code (busca automática)
+  const filteredDocs = useMemo(() => {
+    const q = (search || "").trim().toLowerCase();
+    if (!q) return docs;
+    return docs.filter((d) => {
+      const nome = (d.nome || d.nome_documento || "").toLowerCase();
+      const tipoDoc = (d.tipo || d.tipo_documento || "").toLowerCase();
+      const tamanho = (d.tamanho || d.tamanho_documento || "").toLowerCase();
+      const short = (d.short_code || "").toLowerCase();
+      return (
+        nome.includes(q) ||
+        tipoDoc.includes(q) ||
+        tamanho.includes(q) ||
+        short.includes(q)
+      );
+    });
+  }, [docs, search]);
+
+  // limpa seleção se o documento selecionado não estiver no conjunto filtrado
+  useEffect(() => {
+    if (!selectedShortCode) return;
+    const found = filteredDocs.some((d) => d.short_code === selectedShortCode);
+    if (!found) setSelectedShortCode(null);
+  }, [filteredDocs, selectedShortCode]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -262,7 +288,15 @@ function ListaAnexoPage() {
               Arquivos
             </li>
             <li>Histórico</li>
-            <li>Configurações</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setOpen(false);
+                navigate("/configuracoes");
+              }}
+            >
+              Configurações
+            </li>
             <li className="exit">Sair</li>
           </ul>
         </nav>
@@ -289,10 +323,13 @@ function ListaAnexoPage() {
             <div className="docs-search">
               <label className="label">Pesquisar por Documento</label>
               <div className="search-row">
-                <input className="search-input" />
-                <button className="btn btn-primary">Pesquisar</button>
-                <div className="spacer" />
-                <button className="btn btn-light" onClick={handleAdicionar}>
+                <input
+                  className="search-input"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Digite nome, tipo, tamanho ou short_code"
+                />
+                <button className="btn btn-light btn-sm" onClick={handleAdicionar}>
                   Adicionar
                 </button>
                 <button className="btn btn-danger" onClick={handleExcluir}>
@@ -318,18 +355,18 @@ function ListaAnexoPage() {
                   </span>
                   <span />
                 </div>
-              ) : docs.length === 0 ? (
+              ) : filteredDocs.length === 0 ? (
                 <div className="row">
                   <div className="col" />
                   <div className="col" style={{ color: "#aaa" }}>
-                    Nenhum documento encontrado.
+                    Nenhum documento encontrado{search ? ` para "${search}"` : "."}
                   </div>
                   <div className="col" />
                   <div className="col" />
                   <div className="col" />
                 </div>
               ) : (
-                docs.map((doc, idx) => (
+                filteredDocs.map((doc, idx) => (
                   <div key={idx} className="row">
                     <div className="col col-radio">
                       <input
@@ -501,9 +538,10 @@ html,body,#root{height:100%}
 .docs-title{font-weight:700;margin-bottom:10px}
 .docs-search{background:#3b3d40;border-radius:6px;padding:10px;border:1px solid #6f7175}
 .label{display:block;font-size:12px;margin-bottom:6px;color:#e6e6e6}
-.search-row{display:grid;grid-template-columns:1fr auto 1fr auto auto;gap:8px;align-items:center}
+.search-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
 .search-input{height:30px;border:1px solid #bfbfbf;background:#2b2d30;color:#fff;border-radius:6px;padding:0 10px}
 .btn{height:30px;padding:0 12px;border-radius:6px;border:1px solid transparent;font-size:12px;font-weight:600;cursor:pointer}
+.btn-sm{padding:0 8px;font-size:12px;border-radius:6px}
 .btn-primary{background:#0f57b3;border-color:#0a5bc7;color:#fff}
 .btn-danger{background:#c13f4a;border-color:#d34a55;color:#fff}
 .btn-light{background:#d9d9d9;color:#000;font-weight:600}

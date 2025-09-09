@@ -4,6 +4,7 @@ import { Menu, User } from "lucide-react";
 // import duplicado removido
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import "./css/atendimentos.css";
 
 export default function AtendimentosPage() {
   const [open, setOpen] = useState(false);
@@ -63,9 +64,115 @@ export default function AtendimentosPage() {
   const [filtro, setFiltro] = useState("");
   const [tipoConsulta, setTipoConsulta] = useState("cliente");
 
+  // Formata datas para pt-BR. Se houver hora diferente de 00:00, inclui hora e minuto.
+  const formatDateBR = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d)) return value;
+    const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0 || d.getSeconds() !== 0;
+    if (hasTime) {
+      return d.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  // Component: detecta se URL é imagem ou documento e exibe preview adequado
+  function PreviewImageLink({ url, name, className }) {
+    const [status, setStatus] = useState('unknown'); // 'unknown' | 'image' | 'doc' | 'link'
+
+    useEffect(() => {
+      if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+        setStatus('link');
+        return;
+      }
+
+      const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+      const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', 'odt'];
+
+      // extrai extensão (antes de query)
+      const clean = url.split('?')[0].split('#')[0];
+      const parts = clean.split('.');
+      const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+
+      if (imageExts.includes(ext)) {
+        setStatus('image');
+        return;
+      }
+      if (docExts.includes(ext)) {
+        setStatus('doc');
+        return;
+      }
+
+      // tentativa de carregar como imagem (para URLs sem extensão)
+      let mounted = true;
+      const img = new Image();
+      const handleLoad = () => { if (mounted) setStatus('image'); };
+      const handleError = () => { if (mounted) setStatus('link'); };
+      img.addEventListener('load', handleLoad);
+      img.addEventListener('error', handleError);
+      // iniciar carregamento
+      img.src = url;
+      // se após X ms ainda estiver desconhecido, assumir que não é imagem
+      const timer = setTimeout(() => {
+        if (mounted) {
+          // usar função updater para evitar sobrescrever um status já definido
+          setStatus(prev => (prev === 'unknown' ? 'link' : prev));
+        }
+      }, 2500);
+      return () => {
+        mounted = false;
+        clearTimeout(timer);
+        img.removeEventListener('load', handleLoad);
+        img.removeEventListener('error', handleError);
+        // liberar referência para evitar possíveis leaks
+        try { img.src = ''; } catch (e) {}
+      };
+    }, [url]);
+
+    if (status === 'unknown') {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className={className}>
+          <span className="anexo-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></span>
+          <span style={{ marginLeft: 8 }}>{name || url}</span>
+        </a>
+      );
+    }
+
+    if (status === 'image') {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className={className}>
+          <img src={url} alt={name || 'imagem'} className={`msg-img-thumb msg-img-attachment`} />
+        </a>
+      );
+    }
+
+    // status === 'doc' || status === 'link'
+    // mostrar ícone de documento para arquivos, ou link puro
+    const displayName = name || url.split('/').pop() || url;
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className={`${className} attachment-with-icon`}>
+        <span className="attachment-icon" aria-hidden>
+          {/* simple document SVG */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 2H14L20 8V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V4C4 2.89543 4.89543 2 6 2Z" stroke="#bfbfbf" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 2V8H20" stroke="#bfbfbf" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8 12H16" stroke="#bfbfbf" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8 16H12" stroke="#bfbfbf" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+        <span className="attachment-name">{displayName}</span>
+      </a>
+    );
+  }
+
   return (
-    <div className="atendimentos-chat">
-      <style>{css}</style>
+  <div className="atendimentos-chat">
       {open && <div className="overlay" />}
       <aside ref={sidebarRef} className={`sidebar ${open ? "open" : ""}`}>
         <nav>
@@ -75,7 +182,12 @@ export default function AtendimentosPage() {
             <li style={{ fontWeight: 600 }}>Atendimentos</li>
             <li onClick={() => { setOpen(false); navigate("/anexos"); }}>Arquivos</li>
             <li>Histórico</li>
-            <li>Configurações</li>
+            <li
+              style={{ cursor: "pointer" }}
+              onClick={() => { setOpen(false); navigate("/configuracoes"); }}
+            >
+              Configurações
+            </li>
             <li className="exit">Sair</li>
           </ul>
         </nav>
@@ -163,8 +275,8 @@ export default function AtendimentosPage() {
                       {agenteInfo && agenteInfo.dominios_permitidos && (
                         <span>Domínios permitidos: {Array.isArray(agenteInfo.dominios_permitidos) ? agenteInfo.dominios_permitidos.join(", ") : agenteInfo.dominios_permitidos}</span>
                       )}
-                      <span>Início: {selected.inicio}</span>
-                      {selected.fim && <span>Fim: {selected.fim}</span>}
+                      <span>Início: {formatDateBR(selected.inicio)}</span>
+                      {selected.fim && <span>Fim: {formatDateBR(selected.fim)}</span>}
                     </div>
                     <div className="chat-messages">
                       {Array.isArray(selected.mensagens) && selected.mensagens.length > 0 ? (
@@ -177,10 +289,36 @@ export default function AtendimentosPage() {
                                 <a href={texto.trim()} target="_blank" rel="noopener noreferrer">
                                   <img src={texto.trim()} alt="imagem" className="msg-img-thumb" />
                                 </a>
+                              ) : (/^https?:\/\//i.test(texto.trim()) ? (
+                                <PreviewImageLink url={texto.trim()} name={msg.titulo || null} />
                               ) : (
                                 <ReactMarkdown>{texto}</ReactMarkdown>
+                              ))}
+                              {/* Anexos enviados junto com a mensagem (pode ser array de strings ou objetos) */}
+                              {Array.isArray(msg.anexos) && msg.anexos.length > 0 && (
+                                <div className="msg-attachments">
+                                  {msg.anexos.map((att, i) => {
+                                    // att pode ser string (url) ou objeto { url, tipo, nome }
+                                    let url = null;
+                                    let tipo = null;
+                                    let nome = null;
+                                    if (typeof att === 'string') {
+                                      url = att;
+                                    } else if (att && typeof att === 'object') {
+                                      url = att.url || att.link || att.conteudo || null;
+                                      tipo = att.tipo || att.type || null;
+                                      nome = att.nome || att.filename || att.nome_arquivo || null;
+                                    }
+                                    const isAttImage = typeof url === 'string' && /^https?:\/\/.+\.(jpg|jpeg|png|gif|bmp)$/i.test(url.trim());
+                                    if (!url) return null;
+                                    // Use PreviewImageLink para detectar imagem e mostrar preview
+                                    return (
+                                      <PreviewImageLink key={i} url={url} name={nome || null} className={isAttImage ? 'attachment-link' : 'attachment-file'} />
+                                    );
+                                  })}
+                                </div>
                               )}
-                              <span className="msg-time">{msg.horario || msg.data || ""}</span>
+                              <span className="msg-time">{formatDateBR(msg.horario || msg.data)}</span>
                             </div>
                           );
                         })
@@ -199,117 +337,4 @@ export default function AtendimentosPage() {
   );
 }
 
-const css = `
-:root{
-  --bg:#1f2022;
-  --panel:#424447;
-  --stroke:#d9d9d9;
-  --sidebar:#2a2c2f;
-  --sidebar-hover:#3a3c40;
-  --exit:#b85151;
-  --overlay:rgba(0,0,0,0.55);
-  --chat-list-bg:#232325;
-  --chat-list-border:#595b5f;
-  --chat-panel-bg:#222325;
-  --chat-user:#3b3d40;
-  --chat-agente:#2a2c2f;
-}
-*{box-sizing:border-box}
-html,body,#root{height:100%}
-.atendimentos-chat{min-height:100vh;background:var(--bg);color:white;display:flex;flex-direction:column;position:relative;overflow-x:hidden}
-.overlay{position:fixed;inset:0;background:var(--overlay);z-index:40}
-.sidebar{position:fixed;top:0;left:-240px;width:220px;height:100%;background:var(--sidebar);transition:all .3s ease;padding:20px 0;z-index:50;}
-.sidebar.open{left:0;}
-.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
-.sidebar nav li{padding:10px 20px;cursor:pointer;transition:background .2s;font-size:15px;}
-.sidebar nav li:hover{background:var(--sidebar-hover);}
-.sidebar nav li.exit{color:var(--exit);font-weight:600;}
-.header-row{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;padding:14px 22px;z-index:30;position:relative}
-.icon-btn{height:34px;width:34px;border-radius:8px;background:#2b2d30;border:1px solid #3a3c3f;color:#fff;display:grid;place-items:center}
-.brand{font-size:18px;font-weight:700;margin:0}
-.avatar{height:36px;width:36px;border-radius:50%;background:white;color:black;border:none;display:grid;place-items:center}
-.spacer{width:100%}
-.main-chat{display:flex;flex:1;min-height:0;}
-.bis_skin_checked {
-  overflow-y: auto;
-  background: #232325;
-  border-radius: 12px;
-  margin: 18px;
-  box-shadow: 0 2px 12px #0002;
-}
-.anexo-spinner {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  border: 3px solid #00eaff;
-  border-top: 3px solid #232323;
-  border-radius: 50%;
-  animation: anexo-spin 0.8s linear infinite;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-@keyframes anexo-spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
-}
-.consulta-menu {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 24px 0 24px;
-}
-.consulta-input {
-  flex: 1;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #595b5f;
-  background: #1b1c1e;
-  color: #fff;
-}
-.btn-consulta {
-  padding: 6px 16px;
-  border-radius: 6px;
-  background: #1762c4;
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-.chat-list{width:270px;background:var(--chat-list-bg);border-right:2px solid var(--chat-list-border);padding:18px 0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:0;max-height: 400px;}
-.chat-list-item{background:transparent;border:1px solid var(--chat-list-border);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;cursor:pointer;transition:background .2s, border .2s;outline:none;color:#fff;font-size:15px; margin-left: 8px; margin-right: 8px;}
-.chat-list-item.selected, .chat-list-item:focus{background:#353638;border-color:#00eaff;}
-.chat-list-protocolo{font-weight:700;font-size:14px;}
-.chat-list-nome{font-size:13px;color:#eaeaea;}
-.chat-panel{flex:1;background:var(--chat-panel-bg);padding:0 0 0 0;display:flex;flex-direction:column;min-height:0;}
-.chat-panel-header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 8px 24px;border-bottom:1px solid var(--chat-list-border);}
-.chat-panel-nome{font-weight:600;font-size:17px;margin-right:18px;}
-.chat-panel-protocolo{font-size:13px;color:#bfbfbf;}
-.chat-panel-status{font-size:13px;padding:2px 10px;border-radius:6px;background:#3b3d40;color:#fff;}
-.chat-panel-info{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;padding:8px 24px 0 24px;color:#bfbfbf;}
-.chat-messages {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 24px;
-  overflow-y: auto;
-  min-height: 0;
-  background: rgba(60,62,65,0.12);
-  border-radius: 12px;
-  margin: 12px 18px;
-  box-shadow: 0 2px 12px #0002;
-  max-height: 300px; /* Limite de altura do chat */
-}
-.msg-bubble{max-width:70%;padding:10px 16px;border-radius:14px;font-size:15px;position:relative;margin-bottom:2px;word-break:break-word;}
-.msg-bubble{max-width:70%;padding:12px 18px;border-radius:16px;font-size:15px;position:relative;margin-bottom:2px;word-break:break-word;box-shadow:0 1px 8px #0001;transition:background .2s;}
-.msg-bubble.user{background:var(--chat-user);align-self:flex-end;}
-.msg-bubble.user{background:linear-gradient(90deg,#3b3d40 80%,#1762c4 100%);align-self:flex-end;}
-.msg-bubble.agente{background:linear-gradient(90deg,#2a2c2f 80%,#3b91ff 100%);align-self:flex-start;}
-.msg-bubble.agente{background:var(--chat-agente);align-self:flex-start;}
-.msg-text{display:block;}
-.msg-text{display:block;white-space:pre-line;word-break:break-word;}
-.msg-img-thumb{max-width:180px;max-height:120px;border-radius:8px;box-shadow:0 2px 8px #0003;margin-bottom:4px;display:block;}
-.msg-time{font-size:11px;color:#ccc;float:right;margin-left:8px;}
-.msg-time{font-size:11px;color:#bfbfbf;float:right;margin-left:8px;}
-.empty{color:#ccc;text-align:center;padding:24px;}
-`
+// CSS moved to src/css/atendimentos.css
