@@ -195,7 +195,6 @@ export default function AgentFormPage() {
   return (
     <div className="simplicio-v2">
       <style>{css}</style>
-      <style>{blobsCss}</style>
 
       {/* BG BLOBS (decoração animada) */}
       <div className="bg-blobs" aria-hidden>
@@ -542,7 +541,6 @@ html,body,#root{height:100%}
   .shortcode-container{ --pill-min: 120px; }
 }
 `;
-
 
 // Exportação nomeada para compatibilidade
 export { AgentFormPage };
