@@ -1,0 +1,12 @@
+.confirm-overlay{
+  position:fixed;inset:0;display:grid;place-items:center;z-index:10000;pointer-events:none;opacity:0;transition:opacity .28s ease;background:rgba(0,0,0,0);
+}
+.confirm-overlay.show{pointer-events:auto;opacity:1;background:rgba(0,0,0,0.45)}
+.confirm-overlay.leaving{opacity:0;background:rgba(0,0,0,0)}
+.confirm-modal{width:360px;background:#242628;color:#fff;padding:18px;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.6);transform:translateY(10px) scale(.98);opacity:0;transition:transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s ease}
+.confirm-modal.show{transform:translateY(0) scale(1);opacity:1}
+.confirm-modal.leaving{transform:translateY(8px) scale(.98);opacity:0}
+.confirm-message{font-size:15px;margin-bottom:14px}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#2b2d30;color:#fff;cursor:pointer}
+.btn-primary{background:#0f57b3;color:#fff;border-color:transparent}

@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
+import { useNotifications } from "../components/notifications/NotificationProvider";
 
 const PERMISSOES = ["Texto", "Áudio"];
 const PERMISSOES_SAIDA = ["Texto", "Link", "Imagem", "Documentos"];
@@ -12,6 +14,8 @@ export default function AgentFormPage() {
   const [open, setOpen] = useState(false);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+  const { success, error: notifyError, info } = useNotifications();
   const location = useLocation();
   const agenteEdit = location.state?.agente;
 
@@ -157,10 +161,10 @@ export default function AgentFormPage() {
       }
       if (!res.ok) throw new Error("Erro ao salvar agente");
       await res.json();
-      alert(agenteEdit ? "Agente atualizado com sucesso!" : "Agente cadastrado com sucesso!");
+      success(agenteEdit ? "Agente atualizado com sucesso!" : "Agente cadastrado com sucesso!");
       navigate("/agentes");
     } catch {
-      alert("Erro ao salvar agente.");
+      notifyError("Erro ao salvar agente.");
     }
   };
 
@@ -191,6 +195,14 @@ export default function AgentFormPage() {
   return (
     <div className="simplicio-v2">
       <style>{css}</style>
+      <style>{blobsCss}</style>
+
+      {/* BG BLOBS (decoração animada) */}
+      <div className="bg-blobs" aria-hidden>
+        <span className="blob b1" />
+        <span className="blob b2" />
+        <span className="blob b3" />
+      </div>
 
       {/* OVERLAY */}
       {open && <div className="overlay" />}
@@ -245,7 +257,7 @@ export default function AgentFormPage() {
             >
               Configurações
             </li>
-            <li className="exit">Sair</li>
+            <li className="exit" style={{ cursor: "pointer" }} onClick={async () => { setOpen(false); try { await logout(); navigate('/'); } catch (e){} }}>Sair</li>
           </ul>
         </nav>
       </aside>
@@ -263,6 +275,7 @@ export default function AgentFormPage() {
         <div className="spacer" />
         <button className="avatar" aria-label="perfil">
           <User size={16} />
+          <span className="avatar-ring" />
         </button>
       </div>
 
@@ -429,13 +442,12 @@ html,body,#root{height:100%}
 .overlay{position:fixed;inset:0;background:var(--overlay);z-index:40}
 
 /* SIDEBAR */
-.sidebar{position:fixed;top:0;left:-240px;width:220px;height:100%;background:var(--sidebar);transition:all .3s ease;padding:20px 0;z-index:50;}
+.sidebar{position:fixed;top:0;left:-260px;width:240px;height:100%;background:linear-gradient(180deg, #0c0d0f, #0f1113);transition:all .35s cubic-bezier(.2,.9,.2,1);padding:28px 12px;z-index:50;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px)}
 .sidebar.open{left:0;}
-.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
-.sidebar nav li{padding:10px 20px;cursor:pointer;transition:background .2s;font-size:15px;}
-.sidebar nav li:hover{background:var(--sidebar-hover);}
-.sidebar nav li.exit{color:var(--exit);font-weight:600;}
-
+.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.sidebar nav li{padding:12px 18px;cursor:pointer;border-radius:8px;transition:background .18s, transform .18s;font-size:15px}
+.sidebar nav li:hover{background:var(--sidebar-hover);transform:translateX(6px)}
+.sidebar nav li.exit{color:var(--exit);font-weight:700}
 /* HEADER */
 .header-row{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;padding:14px 22px;z-index:30;position:relative}
 .icon-btn{height:34px;width:34px;border-radius:8px;background:#2b2d30;border:1px solid #3a3c3f;color:#fff;display:grid;place-items:center}
@@ -530,6 +542,7 @@ html,body,#root{height:100%}
   .shortcode-container{ --pill-min: 120px; }
 }
 `;
+
 
 // Exportação nomeada para compatibilidade
 export { AgentFormPage };

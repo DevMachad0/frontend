@@ -1,6 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useContext } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
+import { useNotifications } from "../components/notifications/NotificationProvider";
+import { useConfirm } from "../components/confirm/ConfirmProvider";
 
 // =========================
 // Página: Lista de Documentos
@@ -18,6 +21,9 @@ function ListaAnexoPage() {
   const [fileSize, setFileSize] = useState("");
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+  const { success, error: notifyError, info } = useNotifications();
+  const confirm = useConfirm();
 
   const EXTENSOES_IMAGEM = ["jpg", "jpeg", "png", "gif", "bmp"];
   const EXTENSOES_DOCUMENTO = ["pdf", "doc", "docx", "xls", "xlsx", "txt"];
@@ -99,7 +105,7 @@ function ListaAnexoPage() {
       (tipo === "imagem" && !EXTENSOES_IMAGEM.includes(ext)) ||
       (tipo === "documento" && !EXTENSOES_DOCUMENTO.includes(ext))
     ) {
-      alert("Extensão não permitida!");
+      notifyError("Extensão não permitida!");
       return;
     }
     setNome(file.name);
@@ -130,7 +136,7 @@ function ListaAnexoPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Anexo cadastrado com sucesso! Short_code: " + data.short_code);
+        success("Anexo cadastrado com sucesso! Short_code: " + data.short_code);
         setShowPopup(false);
         setNome("");
         setConteudo("");
@@ -141,20 +147,21 @@ function ListaAnexoPage() {
         const dataList = await resList.json();
         setDocs(Array.isArray(dataList.anexos) ? dataList.anexos : []);
       } else {
-        alert(data.error || "Erro ao cadastrar anexo.");
+        notifyError(data.error || "Erro ao cadastrar anexo.");
       }
     } catch {
-      alert("Erro ao cadastrar anexo.");
+      notifyError("Erro ao cadastrar anexo.");
     }
     setLoading(false);
   }
 
   async function handleExcluir() {
     if (!selectedShortCode) {
-      alert("Selecione um documento para excluir.");
+      info("Selecione um documento para excluir.");
       return;
     }
-    if (!window.confirm("Tem certeza que deseja excluir este anexo?")) return;
+    const ok = await confirm({ message: "Tem certeza que deseja excluir este anexo?" });
+    if (!ok) return;
     const apiUrl = process.env.REACT_APP_API_URL;
     try {
       const res = await fetch(`${apiUrl}/anexos/excluir/${selectedShortCode}`, {
@@ -162,17 +169,17 @@ function ListaAnexoPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Anexo excluído com sucesso!");
+        success("Anexo excluído com sucesso!");
         // Atualiza lista
         const resList = await fetch(`${apiUrl}/anexos/listar`);
         const dataList = await resList.json();
         setDocs(Array.isArray(dataList.anexos) ? dataList.anexos : []);
         setSelectedShortCode(null);
       } else {
-        alert(data.error || "Erro ao excluir anexo.");
+        notifyError(data.error || "Erro ao excluir anexo.");
       }
     } catch {
-      alert("Erro ao excluir anexo.");
+      notifyError("Erro ao excluir anexo.");
     }
   }
 
@@ -183,7 +190,7 @@ function ListaAnexoPage() {
       const res = await fetch(`${apiUrl}/anexos/download/${short_code}`);
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Erro ao baixar documento.");
+        notifyError(data.error || "Erro ao baixar documento.");
         return;
       }
       if (data.tipo === "link") {
@@ -208,14 +215,14 @@ function ListaAnexoPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("Erro ao baixar documento.");
+      notifyError("Erro ao baixar documento.");
     }
   }
 
   function handleCopyShortCode(short_code) {
     navigator.clipboard.writeText(short_code)
-      .then(() => alert("Short_code copiado!"))
-      .catch(() => alert("Erro ao copiar Short_code."));
+      .then(() => success("Short_code copiado!"))
+      .catch(() => notifyError("Erro ao copiar Short_code."));
   }
 
   // Novo: visualizar online (abre em nova aba se for arquivo)
@@ -297,7 +304,7 @@ function ListaAnexoPage() {
             >
               Configurações
             </li>
-            <li className="exit">Sair</li>
+            <li className="exit" style={{ cursor: "pointer" }} onClick={async () => { setOpen(false); try { await logout(); navigate('/'); } catch (e){} }}>Sair</li>
           </ul>
         </nav>
       </aside>
@@ -518,12 +525,13 @@ const docsCss = `
 html,body,#root{height:100%}
 .simplicio-v2{min-height:100vh;background:var(--bg);color:white;display:flex;flex-direction:column;position:relative;overflow-x:hidden}
 .overlay{position:fixed;inset:0;background:var(--overlay);z-index:40}
-.sidebar{position:fixed;top:0;left:-240px;width:220px;height:100%;background:var(--sidebar);transition:all .3s ease;padding:20px 0;z-index:50;}
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:-260px;width:240px;height:100%;background:linear-gradient(180deg, #0c0d0f, #0f1113);transition:all .35s cubic-bezier(.2,.9,.2,1);padding:28px 12px;z-index:50;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px)}
 .sidebar.open{left:0;}
-.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
-.sidebar nav li{padding:10px 20px;cursor:pointer;transition:background .2s;font-size:15px;}
-.sidebar nav li:hover{background:var(--sidebar-hover);}
-.sidebar nav li.exit{color:var(--exit);font-weight:600;}
+.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.sidebar nav li{padding:12px 18px;cursor:pointer;border-radius:8px;transition:background .18s, transform .18s;font-size:15px}
+.sidebar nav li:hover{background:var(--sidebar-hover);transform:translateX(6px)}
+.sidebar nav li.exit{color:var(--exit);font-weight:700}
 .header-row{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;padding:14px 22px;z-index:30;position:relative}
 .icon-btn{height:34px;width:34px;border-radius:8px;background:#2b2d30;border:1px solid #3a3c3f;color:#fff;display:grid;place-items:center}
 .brand{font-size:18px;font-weight:700;margin:0}

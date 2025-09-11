@@ -1,15 +1,17 @@
-import './App.css';
-import React, { useState, useContext } from 'react';
+import './css/App.css';
+import { useState, useContext } from 'react';
 import logo from './images/logo.png';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import SimplicioPage from './home';
-import ListaAgentesPage from './lista_agentes';
-import { AgentFormPage } from './add_agente';
-import { ListaAnexoPage } from './lista_anexo';
-import AtendimentosPage from './atendimentos';
+import SimplicioPage from './pages/home';
+import ListaAgentesPage from './pages/lista_agentes';
+import { AgentFormPage } from './pages/add_agente';
+import { ListaAnexoPage } from './pages/lista_anexo';
+import AtendimentosPage from './pages/atendimentos';
 import { AuthProvider, AuthContext } from './auth/AuthProvider';
+import { NotificationProvider } from './components/notifications/NotificationProvider';
+import { ConfirmProvider } from './components/confirm/ConfirmProvider';
 import ProtectedRoute from './auth/ProtectedRoute';
-import ConfiguracoesPage from './configuracoes';
+import ConfiguracoesPage from './pages/configuracoes';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -88,7 +90,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
+        <NotificationProvider>
+          <ConfirmProvider>
+            <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/home" element={<ProtectedRoute><SimplicioPage /></ProtectedRoute>} />
           <Route path="/agentes" element={<ProtectedRoute><ListaAgentesPage /></ProtectedRoute>} />
@@ -96,7 +100,9 @@ function App() {
           <Route path="/anexos" element={<ProtectedRoute><ListaAnexoPage /></ProtectedRoute>} />
           <Route path="/atendimentos" element={<ProtectedRoute><AtendimentosPage /></ProtectedRoute>} />
           <Route path="/configuracoes" element={<ProtectedRoute><ConfiguracoesPage /></ProtectedRoute>} />
-        </Routes>
+            </Routes>
+          </ConfirmProvider>
+        </NotificationProvider>
       </AuthProvider>
     </Router>
   );

@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
 
 export default function ConfiguracoesPage() {
   const [nomeSistema, setNomeSistema] = useState("");
@@ -11,6 +12,7 @@ export default function ConfiguracoesPage() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const sidebarRef = useRef(null);
+  const { logout } = useContext(AuthContext);
   const logoInputRef = useRef(null);
   const faviconInputRef = useRef(null);
 
@@ -89,7 +91,7 @@ export default function ConfiguracoesPage() {
             >
               Configurações
             </li>
-            <li className="exit">Sair</li>
+            <li className="exit" style={{ cursor: "pointer" }} onClick={async () => { setOpen(false); try { await logout(); navigate('/'); } catch (e){} }}>Sair</li>
           </ul>
         </nav>
       </aside>
@@ -198,7 +200,6 @@ export default function ConfiguracoesPage() {
 
           <div className="actions">
             <button className="btn btn-primary">Salvar</button>
-            <button className="btn btn-light" onClick={() => { setNomeSistema(""); setLogoText("Logo do sistema"); }}>Resetar</button>
           </div>
         </div>
       </main>
@@ -217,13 +218,13 @@ html,body,#root{height:100%}
 .icon-btn{height:34px;width:34px;border-radius:8px;background:#2b2d30;border:1px solid #3a3c3f;color:#fff;display:grid;place-items:center}
 .avatar{height:36px;width:36px;border-radius:50%;background:white;color:black;border:none;display:grid;place-items:center}
 .spacer{width:100%}
-.main{flex:1;display:flex;align-items:center;justify-content:center;padding:28px}
+.main{flex:1;display:flex;justify-content:center;padding:28px}
 .card{width:min(900px,calc(100% - 80px));height:400px;border:1px solid var(--stroke);border-radius:8px;padding:28px;background:var(--panel);overflow:auto}
 .card-title{font-size:18px;margin:0 0 16px 0}
 .form-row{margin-bottom:12px}
 .card-grid{display:grid;grid-template-columns:1fr 220px;gap:18px;align-items:start}
 .card-main{}
-.card-side{border-left:1px solid rgba(255,255,255,0.04);padding-left:12px}
+.card-side{padding-left:12px}
 .label{display:block;font-size:13px;color:#cfcfcf;margin-bottom:8px}
 .input{height:32px;padding:6px 10px;border-radius:6px;border:1px solid #6f7175;background:#232324;color:#fff}
 .logo-row{display:flex;align-items:center;gap:12px}
@@ -239,12 +240,10 @@ html,body,#root{height:100%}
 .btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid transparent;cursor:pointer}
 .btn-primary{background:#0f57b3;color:#fff}
 .btn-light{background:#d9d9d9;color:#000}
-/* Sidebar styles (same as other pages) */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:40}
-.sidebar{position:fixed;top:0;left:-240px;width:220px;height:100%;background:#2a2c2f;transition:all .28s cubic-bezier(.2,.9,.2,1);padding:20px 0;z-index:50}
-.sidebar.open{left:0}
-.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
-.sidebar nav li{padding:10px 20px;cursor:pointer;transition:background .18s;font-size:15px}
-.sidebar nav li:hover{background:#3a3c40}
-.sidebar nav li.exit{color:#b85151;font-weight:600}
-`;
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:-260px;width:240px;height:100%;background:linear-gradient(180deg, #0c0d0f, #0f1113);transition:all .35s cubic-bezier(.2,.9,.2,1);padding:28px 12px;z-index:50;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px)}
+.sidebar.open{left:0;}
+.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.sidebar nav li{padding:12px 18px;cursor:pointer;border-radius:8px;transition:background .18s, transform .18s;font-size:15px}
+.sidebar nav li:hover{background:var(--sidebar-hover);transform:translateX(6px)}
+.sidebar nav li.exit{color:var(--exit);font-weight:700}`;

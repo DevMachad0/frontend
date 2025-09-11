@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useContext } from "react";
 import { Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
+import { useNotifications } from "../components/notifications/NotificationProvider";
+import { useConfirm } from "../components/confirm/ConfirmProvider";
 
 export default function ListaAgentesPage() {
   const [search, setSearch] = useState("");
@@ -10,6 +13,9 @@ export default function ListaAgentesPage() {
   const [loading, setLoading] = useState(true); // novo estado de loading
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+  const { success, error: notifyError, info } = useNotifications();
+  const confirm = useConfirm();
 
   // Função para buscar agentes
   const fetchAgentes = () => {
@@ -72,10 +78,12 @@ export default function ListaAgentesPage() {
   // Função para excluir agente
   const handleExcluir = () => {
     if (!selectedId) {
-      alert("Selecione um agente para excluir.");
+      info("Selecione um agente para excluir.");
       return;
     }
-    if (window.confirm("Tem certeza que deseja excluir este agente?")) {
+    (async () => {
+      const ok = await confirm({ message: "Tem certeza que deseja excluir este agente?" });
+      if (!ok) return;
       const apiUrl = process.env.REACT_APP_API_URL;
       fetch(`${apiUrl}/agente/excluir_agente/${selectedId}`, {
         method: "DELETE",
@@ -88,8 +96,8 @@ export default function ListaAgentesPage() {
           fetchAgentes();
           setSelectedId(null);
         })
-        .catch(() => alert("Erro ao excluir agente."));
-    }
+        .catch(() => notifyError("Erro ao excluir agente."));
+    })();
   };
 
   // Formata data para pt-BR
@@ -158,7 +166,7 @@ export default function ListaAgentesPage() {
             >
               Configurações
             </li>
-            <li className="exit">Sair</li>
+            <li className="exit" style={{ cursor: "pointer" }} onClick={async () => { setOpen(false); try { await logout(); navigate('/'); } catch (e){} }}>Sair</li>
           </ul>
         </nav>
       </aside>
@@ -254,8 +262,8 @@ export default function ListaAgentesPage() {
                         const apiUrl = process.env.REACT_APP_API_URL;
                         const webhookUrl = `${apiUrl}${agente.url}`;
                         navigator.clipboard.writeText(webhookUrl)
-                          .then(() => alert("URL Webhook copiada!"))
-                          .catch(() => alert("Erro ao copiar URL Webhook."));
+                          .then(() => success("URL Webhook copiada!"))
+                          .catch(() => notifyError("Erro ao copiar URL Webhook."));
                       }}
                     >
                       URL
@@ -282,14 +290,13 @@ export default function ListaAgentesPage() {
 
 // ===== CSS extra para sidebar =====
 const cssSidebar = `
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:40}
-.sidebar{position:fixed;top:0;left:-240px;width:220px;height:100%;background:#2a2c2f;transition:all .3s ease;padding:20px 0;z-index:50;}
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:-260px;width:240px;height:100%;background:linear-gradient(180deg, #0c0d0f, #0f1113);transition:all .35s cubic-bezier(.2,.9,.2,1);padding:28px 12px;z-index:50;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px)}
 .sidebar.open{left:0;}
-.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
-.sidebar nav li{padding:10px 20px;cursor:pointer;transition:background .2s;font-size:15px;}
-.sidebar nav li:hover{background:#3a3c40;}
-.sidebar nav li.exit{color:#b85151;font-weight:600;}
-`;
+.sidebar nav ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.sidebar nav li{padding:12px 18px;cursor:pointer;border-radius:8px;transition:background .18s, transform .18s;font-size:15px}
+.sidebar nav li:hover{background:var(--sidebar-hover);transform:translateX(6px)}
+.sidebar nav li.exit{color:var(--exit);font-weight:700}`;
 
 // ===== CSS =====
 const css = `

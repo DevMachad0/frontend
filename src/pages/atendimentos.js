@@ -1,10 +1,11 @@
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import { Menu, User } from "lucide-react";
 // import duplicado removido
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
-import "./css/atendimentos.css";
+import "../css/atendimentos.css";
+import { AuthContext } from "../auth/AuthProvider";
 
 export default function AtendimentosPage() {
   const [open, setOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function AtendimentosPage() {
   const [loading, setLoading] = useState(true);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -188,7 +190,7 @@ export default function AtendimentosPage() {
             >
               Configurações
             </li>
-            <li className="exit">Sair</li>
+            <li className="exit" style={{ cursor: "pointer" }} onClick={async () => { setOpen(false); try { await logout(); navigate('/'); } catch (e){} }}>Sair</li>
           </ul>
         </nav>
       </aside>

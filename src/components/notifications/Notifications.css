@@ -1,0 +1,32 @@
+.notification-wrapper{
+  position:fixed;
+  right:18px;
+  top:18px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index:9999;
+}
+.notification{
+  min-width:260px;
+  max-width:380px;
+  padding:10px 12px;
+  border-radius:8px;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:0 6px 24px rgba(0,0,0,0.4);
+  font-size:14px;
+  opacity:0;transform:translateX(12px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s cubic-bezier(.2,.9,.2,1);
+}
+.notification.show{opacity:1;transform:translateX(0) scale(1)}
+.notification.leaving{opacity:0;transform:translateX(12px) scale(.96);transition:transform .36s cubic-bezier(.2,.9,.2,1), opacity .36s ease}
+.notification.success{background:linear-gradient(90deg,#16a34a,#06b6d4);}
+.notification.error{background:linear-gradient(90deg,#ef4444,#fb7185);}
+.notification.info{background:linear-gradient(90deg,#3b82f6,#06b6d4);}
+.notification-message{flex:1;padding-right:8px}
+.notification-close{background:transparent;border:none;color:inherit;font-size:18px;cursor:pointer;padding:4px 6px}
+
+/* small subtle entrance for the wrapper so multiple toasts feel cohesive */
+.notification-wrapper::before{content:"";display:block;height:4px}
