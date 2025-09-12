@@ -280,7 +280,7 @@ export default function AtendimentosPage() {
                       <span>Início: {formatDateBR(selected.inicio)}</span>
                       {selected.fim && <span>Fim: {formatDateBR(selected.fim)}</span>}
                     </div>
-                    <div className="chat-messages">
+                    <div className="chat-messages-atendimento">
                       {Array.isArray(selected.mensagens) && selected.mensagens.length > 0 ? (
                         selected.mensagens.map((msg, idx) => {
                           const texto = msg.texto || msg.mensagem || "";

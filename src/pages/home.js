@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
-import { Menu, User, Mic, Plus } from "lucide-react";
+import { useState, useEffect, useRef, useContext } from "react";
+import { Menu, User, Mic, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../auth/AuthProvider";
 
@@ -8,6 +8,14 @@ export default function SimplicioPage() {
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
+
+  const inputRef = useRef(null);
+
+  // Novos estados para input, mensagens e abrir o painel de chat
+  const [inputValue, setInputValue] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const chatRef = useRef(null);
 
   async function handleLogout() {
     setOpen(false);
@@ -18,6 +26,62 @@ export default function SimplicioPage() {
       // ignore
     }
   }
+
+  // Função de envio: adiciona mensagem do usuário, levanta o painel e simula resposta do agente
+  function handleSend() {
+    const text = inputValue.trim();
+    if (!text) return;
+    const userMsg = { id: Date.now(), role: "user", text };
+    setMessages((m) => [...m, userMsg]);
+    setInputValue("");
+    // reset height after send
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.overflowY = "hidden";
+    }
+    // abre o painel para revelar o chat atrás do card
+    setChatOpen(true);
+
+    // Simula resposta do agente com pequeno delay (você pode ligar ao backend aqui)
+    setTimeout(() => {
+      const agentMsg = { id: Date.now() + 1, role: "agent", text: "Recebido — processando..." };
+      setMessages((m) => [...m, agentMsg]);
+      // opcional: animação extra para chegada da mensagem (já aplicada via CSS)
+    }, 700);
+  }
+
+  function handleKeyDown(e) {
+    // Allow newline with Enter. Send only on Ctrl+Enter or Cmd+Enter
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  // auto-resize textarea up to 3 lines; show scrollbar after
+  useEffect(() => {
+    const ta = inputRef.current;
+    if (!ta) return;
+    // reset to measure
+    ta.style.height = 'auto';
+    const style = window.getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight) || 18;
+    const maxHeight = Math.ceil(lineHeight * 3);
+    const newHeight = Math.min(ta.scrollHeight, maxHeight);
+    ta.style.height = `${newHeight}px`;
+    ta.style.overflowY = ta.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, [inputValue]);
+
+  // scroll chat to bottom when messages change
+  useEffect(() => {
+    const el = chatRef.current;
+    if (!el) return;
+    // small timeout to allow new message render/styles
+    const t = setTimeout(() => {
+      el.scrollTop = el.scrollHeight;
+    }, 40);
+    return () => clearTimeout(t);
+  }, [messages]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -120,35 +184,60 @@ export default function SimplicioPage() {
         </select>
       </div>
 
-      {/* CONTAINER PRINCIPAL */}
+      {/* CONTAINER PRINCIPAL: agora com wrapper que contém o painel e o chat "atrás" */}
       <main className="main">
-        <section className="panel">
-          <div className="welcome">
-            <h2 className="welcome-title">Bem-vindo de volta</h2>
-            <p className="welcome-sub">
-              Seu painel está pronto — comece a interagir.
-            </p>
-            <div
-              className="pulse-cta"
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate("/atendimentos")}
-            >
-              Ver atendimentos
+        <div className="panel-wrap">
+          {/* Chat escondido atrás do card */}
+          <aside className={`chat-behind ${chatOpen ? "visible" : ""}`} aria-hidden={!chatOpen}
+            onClick={(e) => { if (e.target === e.currentTarget) setChatOpen(false); }}>
+            
+            <div ref={chatRef} className="chat-messages" role="log" aria-live="polite">
+              {messages.map((m) => (
+                <div key={m.id} className={`chat-message ${m.role === "user" ? "user" : "agent"}`}>
+                  {m.text}
+                </div>
+              ))}
             </div>
-          </div>
-        </section>
+          </aside>
+
+          {/* CARD PRINCIPAL que será levantado ao enviar */}
+          <section className={`panel ${chatOpen ? "lifted" : ""}`}>
+            <div className="welcome">
+              <h2 className="welcome-title">Bem-vindo de volta</h2>
+              <p className="welcome-sub">
+                Seu painel está pronto — comece a interagir.
+              </p>
+              <div
+                className="pulse-cta"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate("/atendimentos")}
+              >
+                Ver atendimentos
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
 
       {/* INPUT BAR */}
       <footer className="footer">
         <div className="inputbar">
-          <div className="chip">
-            <Plus size={14} />
-          </div>
-          <input className="input" placeholder="Escreva uma mensagem..." />
+          <textarea
+            ref={inputRef}
+            className="input"
+            placeholder="Escreva uma mensagem... (Enter = nova linha, Ctrl/Cmd+Enter = enviar)"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            aria-label="mensagem"
+          />
           <button className="chip" aria-label="microfone">
             <Mic size={14} />
+          </button>
+          <button className="chip send" aria-label="enviar" onClick={handleSend}>
+            <Send size={14} />
           </button>
         </div>
       </footer>
@@ -181,10 +270,6 @@ html,body,#root{height:100%}
 .bg-blobs .b2{width:260px;height:260px;background:linear-gradient(135deg,var(--accent-2),#60a5fa);right:-40px;top:20%;animation:float2 12s ease-in-out infinite}
 .bg-blobs .b3{width:200px;height:200px;background:linear-gradient(135deg,#f472b6,#fb923c);left:20%;bottom:-60px;animation:float3 14s ease-in-out infinite}
 
-@keyframes float1{0%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-30px) rotate(8deg)}100%{transform:translateY(0) rotate(0deg)}}
-@keyframes float2{0%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(36px) rotate(-6deg)}100%{transform:translateY(0) rotate(0deg)}}
-@keyframes float3{0%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-18px) rotate(4deg)}100%{transform:translateY(0) rotate(0deg)}}
-
 /* OVERLAY */
 .overlay{position:fixed;inset:0;background:var(--overlay);z-index:40}
 
@@ -198,7 +283,7 @@ html,body,#root{height:100%}
 
 /* HEADER */
 .header-row{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;padding:18px 28px;z-index:30;position:relative}
-.icon-btn{height:40px;width:40px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:#fff;display:grid;place-items:center;transition:transform .15s, background .15s}
+.icon-btn{height:40px;width:40px;border-radius:10px;background:#2b2d30;border:1px solid rgba(255,255,255,0.04);color:#fff;display:grid;place-items:center;transition:transform .15s, background .15s}
 .icon-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,0.05)}
 .brand{font-size:20px;font-weight:800;margin:0;letter-spacing:0.4px;color:linear-gradient(90deg,#fff,#cce7ff);animation:fadeInDown .6s both}
 .avatar{height:42px;width:42px;border-radius:50%;background:linear-gradient(180deg,#fff,#dbeafe);color:#000;border:none;display:grid;place-items:center;position:relative}
@@ -211,7 +296,41 @@ html,body,#root{height:100%}
 .mode{appearance:none;background:rgba(255,255,255,0.03);color:#e6eef8;border:1px solid var(--stroke);border-radius:8px;height:34px;padding:0 12px;font-size:13px}
 
 .main{display:flex;justify-content:center;padding-bottom:12px}
-.panel{width:min(980px,calc(100% - 64px));height:54vh;min-height:260px;margin-top:20px;border-radius:12px;background:var(--panel);border:1px solid var(--stroke);position:relative;z-index:10;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+/* wrapper para controlar sobreposição do card e chat atrás */
+.panel-wrap{width:min(980px,calc(100% - 64px));height:54vh;min-height:260px;margin-top:20px;position:relative;display:flex;align-items:center;justify-content:center;overflow:visible}
+
+/* painel principal (card) */
+/* ajuste: will-change, transform-origin, transições mais suaves e combinadas */
+.panel{width:100%;height:100%;border-radius:12px;background:var(--panel);border:1px solid var(--stroke);position:relative;z-index:20;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 40px rgba(2,6,23,0.6);transition:box-shadow .3s ease;will-change:transform,opacity,filter;transform-origin:center center;backface-visibility:hidden}
+/* estado levantado: animação suave de subir + desvanecer. usamos transform-origin no topo para parecer que sobe para revelar o chat */
+.panel.lifted{animation:panelFadeOut .2s cubic-bezier(.22,.9,.26,1) forwards;pointer-events:none;will-change:opacity,filter,transform}
+
+@keyframes panelFadeOut{
+  0%{opacity:1;transform:scale(1) translateZ(0);filter:blur(0px);box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+  40%{opacity:.7;transform:scale(.997);filter:blur(.8px);box-shadow:0 9px 34px rgba(2,6,23,0.5)}
+  100%{opacity:0;transform:scale(.994);filter:blur(3px);box-shadow:0 6px 20px rgba(2,6,23,0.24)}
+}
+
+/* painel de chat atrás */
+/* ajuste: começa um pouco abaixo e com opacidade 0; ao ficar visível vem suavemente com pequeno delay */
+.chat-behind{position:absolute;inset:0;background:#0c0d0f;border-radius:12px;border:1px solid rgba(255,255,255,0.03);z-index:10;padding:18px;opacity:0;transform:translateY(8px) scale(.997);transition:opacity .42s cubic-bezier(.22,.9,.26,1) .04s, transform .46s cubic-bezier(.22,.9,.26,1) .04s;display:flex;flex-direction:column;overflow:hidden;color:#fff;pointer-events:none;will-change:transform,opacity}
+.chat-behind.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+
+/* pequenas melhorias visuais para o fluxo */
+.chat-messages{flex:1;overflow:auto;padding-right:8px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+
+/* mensagens */
+.chat-messages{flex:1;overflow:auto;padding-right:8px;display:flex;flex-direction:column;gap:10px}
+.chat-message{padding:10px 12px;border-radius:10px;max-width:78%;line-height:1.22;font-size:14px;opacity:0.98}
+.chat-message.user{align-self:flex-end;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#04263b;font-weight:700}
+.chat-message.agent{align-self:flex-start;background:rgba(255,255,255,0.03);color:#fff;border:1px solid rgba(255,255,255,0.03)}
+
+/* preserve user line breaks and wrap long words */
+.chat-message{white-space:pre-wrap;word-break:break-word}
+
+/* animação de entrada para mensagens novas */
+@keyframes messageIn{0%{opacity:0;transform:translateY(8px) scale(.995)}100%{opacity:1;transform:none}}
+.chat-message{animation:messageIn .36s ease both}
 
 /* Welcome card inside panel */
 .welcome{padding:28px 36px;text-align:center;animation:cardIn .6s cubic-bezier(.2,.9,.2,1) both}
@@ -223,17 +342,27 @@ html,body,#root{height:100%}
 @keyframes cardIn{0%{opacity:0;transform:translateY(10px) scale(.995)}100%{opacity:1;transform:none}}
 @keyframes ctaPulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
 
-.footer{display:flex;justify-content:center;padding:22px 0 34px}
-.inputbar{width:min(980px,calc(100% - 64px));background:rgba(255,255,255,0.02);border:1px solid var(--stroke);border-radius:12px;display:grid;grid-template-columns:46px 1fr 46px;align-items:center;gap:10px;padding:10px}
+.footer{display:flex;justify-content:center;padding:10px 0 34px}
+.inputbar{width:min(980px,calc(100% - 64px));background:rgba(255,255,255,0.02);border:1px solid var(--stroke);border-radius:12px;display:grid;grid-template-columns:1fr 46px 46px;align-items:center;gap:10px;padding:10px}
 .chip{height:36px;width:36px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,0.03);color:#fff;border:1px solid rgba(255,255,255,0.02);cursor:pointer}
-.input{background:transparent;border:none;color:#e6eef8;outline:none;font-size:15px}
+.chip.send{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:#04263b;font-weight:700}
+.input{background:transparent;border:none;color:#e6eef8;outline:none;font-size:15px;resize:none;padding:8px 6px;line-height:18px;max-height:calc(18px * 3);overflow-y:hidden}
+
+/* custom scrollbars for chat and textarea */
+.chat-messages::-webkit-scrollbar, .input::-webkit-scrollbar{width:10px;height:10px}
+.chat-messages::-webkit-scrollbar-track, .input::-webkit-scrollbar-track{background:transparent}
+.chat-messages::-webkit-scrollbar-thumb, .input::-webkit-scrollbar-thumb{background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+.chat-messages{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
+
+/* For Firefox textarea scrollbar visibility */
+textarea.input{overflow:auto}
 
 /* small interactions */
 .sidebar nav li{user-select:none}
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce){
-  .bg-blobs .blob, .pulse-cta, .welcome{animation:none}
-  .icon-btn:hover{transform:none}
+  .panel{transition:none}
+  .chat-behind{transition:none}
 }
 `;
